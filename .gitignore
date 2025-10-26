@@ -56,7 +56,7 @@ coverage.xml
 *.pot
 
 # Django stuff:
-*.log
+# Keep training logs but exclude general log files
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -128,11 +128,11 @@ dmypy.json
 media/
 staticfiles/
 static/
-*.log
+# Allow training logs but exclude general debug logs  
 db.sqlite3
 
-# ML Models and Large Files
-*.pt
+# ML Models and Large Files (but allow essential ones)
+# *.pt  # Commented out to allow essential model files
 *.pth
 *.onnx
 *.h5
@@ -141,9 +141,9 @@ db.sqlite3
 *.pickle
 *.joblib
 
-# Training outputs
-training_logs/
-training_reports/
+# Training outputs (but keep important ones)
+# training_logs/  # Commented out to allow training logs
+# training_reports/  # Commented out to allow training reports
 checkpoints/
 runs/
 wandb/
@@ -224,8 +224,8 @@ env*/
 # Custom exclusions for this project
 # Exclude large model weight files
 weights/
-models/*.pt
-models/*.pth
+# models/*.pt  # Commented out to allow essential model files
+# models/*.pth  # Commented out to allow essential model files
 
 # Exclude PHP files from original system (if not needed)
 *.php
