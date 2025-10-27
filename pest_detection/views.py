@@ -76,7 +76,8 @@ def load_yolo_model():
 
 def aggregate_pest_counts(results, confidence_thresholds: Dict[str, float] = None) -> Dict[str, int]:
     """Aggregate pest counts from YOLO detection results"""
-    class_names = settings.ML_SETTINGS['CLASS_NAMES']
+    # Get class names from database instead of hardcoded settings
+    class_names = [pest.name for pest in PestType.objects.all().order_by('name')]
     counts = {name: 0 for name in class_names}
     
     if not results or not results[0] or not hasattr(results[0], 'boxes'):
@@ -86,13 +87,8 @@ def aggregate_pest_counts(results, confidence_thresholds: Dict[str, float] = Non
     if boxes is None or len(boxes) == 0:
         return counts
     
-    # Default confidence thresholds
-    default_thresholds = {
-        "Rice_Bug": 0.20,
-        "black-bug": 0.80,
-        "brown_hopper": 0.15,
-        "green_hopper": 0.15,
-    }
+    # Get confidence thresholds from database instead of hardcoded values
+    default_thresholds = {pest.name: pest.confidence_threshold for pest in PestType.objects.all()}
     
     thresholds = confidence_thresholds or default_thresholds
     
@@ -143,7 +139,7 @@ def health_check(request):
         data = {
             'status': 'ok' if db_status == 'ok' and model_loaded else 'warning',
             'model': model_name,
-            'classes': settings.ML_SETTINGS['CLASS_NAMES'],
+            'classes': [pest.name for pest in PestType.objects.all().order_by('name')],
             'database_status': db_status,
             'model_loaded': model_loaded,
             'total_detections': total_detections,
@@ -246,12 +242,13 @@ class PestDetectionAPIView(APIView):
     
     def get_confidence_thresholds(self, data):
         """Get confidence thresholds for different pest types"""
-        thresholds = {
-            "Rice_Bug": 0.20,
-            "black-bug": 0.80 if not data.get('disable_black_bug', False) else 1.0,
-            "brown_hopper": 0.15,
-            "green_hopper": 0.15,
-        }
+        # Get thresholds from database instead of hardcoded values
+        thresholds = {pest.name: pest.confidence_threshold for pest in PestType.objects.all()}
+        
+        # Handle special case for black-bug disable flag (if needed)
+        if data.get('disable_black_bug', False) and 'black-bug' in thresholds:
+            thresholds['black-bug'] = 1.0
+        
         return thresholds
     
     @transaction.atomic
@@ -294,7 +291,7 @@ class PestDetectionAPIView(APIView):
         
         raw_detections = []
         boxes = results[0].boxes
-        class_names = settings.ML_SETTINGS['CLASS_NAMES']
+        class_names = [pest.name for pest in PestType.objects.all().order_by('name')]
         
         if boxes is not None:
             try:
@@ -319,7 +316,7 @@ class PestDetectionAPIView(APIView):
             return None
         
         boxes = results[0].boxes
-        class_names = settings.ML_SETTINGS['CLASS_NAMES']
+        class_names = [pest.name for pest in PestType.objects.all().order_by('name')]
         
         if pest_name not in class_names or boxes is None:
             return None
